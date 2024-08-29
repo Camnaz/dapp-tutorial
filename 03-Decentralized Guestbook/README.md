@@ -121,45 +121,46 @@ Ensure that the network settings are configured correctly for [Core Testnet](htt
  * @type import('hardhat/config').HardhatUserConfig
  */
 
- require('@nomiclabs/hardhat-ethers');
- require("@nomiclabs/hardhat-waffle");
+require('@nomiclabs/hardhat-ethers');
+require("@nomiclabs/hardhat-waffle");
 
- const { PrivateKey } = require('./secret.json');
+const { PrivateKey } = require('./secret.json');
 
- module.exports = {
-    defaultNetwork: 'testnet',
- 
-    networks: {
-       hardhat: {
-       },
-       testnet: {
-          url: 'https://rpc.test.btcs.network',
-          accounts: [PrivateKey],
-          chainId: 1115,
-       }
-    },
-    solidity: {
-       compilers: [
-         {
-            version: '0.8.9',
-            settings: {
-               optimizer: {
-                  enabled: true,
-                  runs: 200,
-               },
-            },
-         },
-       ],
-    },
-    paths: {
-       sources: './contracts',
-       cache: './cache',
-       artifacts: './artifacts',
-    },
-    mocha: {
-       timeout: 20000,
-    },
- };
+module.exports = {
+   defaultNetwork: 'testnet',
+
+   networks: {
+      hardhat: {
+      },
+      testnet: {
+         url: 'https://rpc.test.btcs.network',
+         accounts: [PrivateKey],
+         chainId: 1115,  // Ensure this matches the Core testnet chain ID
+      }
+   },
+   solidity: {
+      compilers: [
+        {
+           version: '0.8.21',  // Update to at least 0.8.20 to support the 'paris' EVM
+           settings: {
+              evmVersion: 'paris',  // Specify 'paris' EVM version
+              optimizer: {
+                 enabled: true,
+                 runs: 200,
+              },
+           },
+        },
+      ],
+   },
+   paths: {
+      sources: './contracts',
+      cache: './cache',
+      artifacts: './artifacts',
+   },
+   mocha: {
+      timeout: 20000,  // You can adjust the timeout as needed
+   },
+};
 ```
 <img width="1512" alt="gdscreenshot5 1" src="https://github.com/Camnaz/guestbook-dapp/assets/32852637/d78ae0d4-c9dc-4ba0-9e96-99c38c0a7c89">
 
@@ -176,18 +177,26 @@ Create a file `contracts/Guestbook.sol` with the following content:
 pragma solidity >=0.7.0 <0.9.0;
 
 /// @title Guestbook
+// This contract is a simple guestbook that allows users to sign it with their name and a message.
 contract Guestbook {
+
+    // Define a structure to hold each guestbook entry.
     struct Entry {
-        string name;
-        string message;
+        string name;        // The name of the person signing the guestbook.
+        string message;     // The message they leave in the guestbook.
     }
 
+    // Create a dynamic array to store all the guestbook entries.
     Entry[] public entries;
 
+    // Function to sign the guestbook. It takes the user's name and message as input parameters.
     function signGuestbook(string memory _name, string memory _message) public {
+        // Add a new entry to the entries array using the provided name and message.
         entries.push(Entry(_name, _message));
     }
 
+    // Function to retrieve all the entries in the guestbook. 
+    // It returns an array of Entry structs, allowing anyone to view all entries.
     function getEntries() public view returns (Entry[] memory) {
         return entries;
     }
@@ -202,22 +211,32 @@ contract Guestbook {
 Create a file scripts/deploy.js with the following content:
 
 ```
+// Import the Hardhat Runtime Environment (hre) to access Hardhat's functionality.
 const hre = require("hardhat");
 
 async function main() {
+  // Compile the contracts to ensure they are up-to-date.
   await hre.run('compile'); // Ensure the contracts are compiled
 
+  // Get the contract factory for the Guestbook contract.
   const Guestbook = await hre.ethers.getContractFactory("Guestbook");
+
+  // Deploy the Guestbook contract to the blockchain.
   const guestbook = await Guestbook.deploy();
 
+  // Wait until the contract is deployed successfully.
   await guestbook.deployed();
+
+  // Log the address where the Guestbook contract is deployed.
   console.log("Guestbook contract deployed to:", guestbook.address);
 }
 
+// Call the main function and catch any errors that occur during execution.
 main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+  console.error(error);  // Log any errors to the console.
+  process.exitCode = 1;  // Set the exit code to 1, indicating an error occurred.
 });
+
 ```
 
 <img width="1512" alt="gdscreenshot7" src="https://github.com/Camnaz/guestbook-dapp/assets/32852637/7520ccdc-c78d-4e14-8fc8-5c2d6d619573">
